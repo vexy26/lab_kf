@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          // error
+          // errorr
           if (snapshot.hasError) {
             return Center(
               child: Text("Błąd: ${snapshot.error}"),
