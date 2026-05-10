@@ -31,8 +31,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String selectedFilter = "wszystkie";
-
   late Future<List<Task>> tasksFuture;
+
   @override
   void initState() {
     super.initState();
@@ -41,26 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    int doneTasks = 0;
-    for (var t in TaskRepository.tasks){
-      if (t.done == true){
-        doneTasks++;
-      }
-    }
-
-    List<Task> filteredTasks = TaskRepository.tasks;
-
-    if (selectedFilter == "wykonane") {
-      filteredTasks = TaskRepository.tasks
-          .where((task) => task.done)
-          .toList();
-    } else if (selectedFilter == "do zrobienia") {
-      filteredTasks = TaskRepository.tasks
-          .where((task) => !task.done)
-          .toList();
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text("KrakFlow"),
@@ -90,9 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: () {
                           setState(() {
                             TaskRepository.tasks
-                                .clear(); // usuwa wszystkie elementy z listy
+                                .clear();
                           });
-                          Navigator.pop(context); // zamyka dialog
+                          Navigator.pop(context);
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -110,19 +90,42 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body:FutureBuilder<List<Task>>(
-          future: tasksFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            }
+        future: tasksFuture,
+        builder: (context, snapshot) {
+          // ładowanie
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Text("Błąd: ${snapshot.error}"),
-              );
+          // error
+          if (snapshot.hasError) {
+            return Center(
+              child: Text("Błąd: ${snapshot.error}"),
+            );
+          }
+
+          // wszystko okej
+          final tasks = snapshot.data!;
+
+          int doneTasks = 0;
+          for (var t in tasks){
+            if (t.done == true){
+              doneTasks++;
             }
+          }
+
+          List<Task> filteredTasks = tasks;
+          if (selectedFilter == "wykonane") {
+            filteredTasks = tasks
+                .where((task) => task.done)
+                .toList();
+          } else if (selectedFilter == "do zrobienia") {
+            filteredTasks = tasks
+                .where((task) => !task.done)
+                .toList();
+          }
 
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -130,8 +133,8 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text("Masz dziś ${TaskRepository.tasks.length} zadania. Ilosc wykonanych zadan: $doneTasks"),
-            SizedBox(height: 16),
-            Text("Dzisiejsze zadania",
+            const SizedBox(height: 16),
+            const Text("Dzisiejsze zadania",
               style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -149,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             Expanded(
               child: ListView.builder(
-                itemCount:  filteredTasks.length,
+                itemCount: filteredTasks.length,
                 itemBuilder: (context, index) {
                   final task = filteredTasks[index];
 
@@ -179,27 +182,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                         // edytowanie
-                        onTap: () async {
-                          final Task? updatedTask = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EditTaskScreen(task: task),
-                            ),
-                          );
+                      onTap: () async {
+                        final Task? updatedTask = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditTaskScreen(task: task),
+                          ),
+                        );
                           // aktualizacja po edycji
-                          if (updatedTask != null) {
-                            setState(() {
-                              TaskRepository.tasks[index] = updatedTask;
-                            });
-                          }
-                        },
-                      ),
+                        if (updatedTask != null) {
+                          setState(() {
+                            TaskRepository.tasks[index] = updatedTask;
+                          });
+                        }
+                      },
+                    ),
                   );
-              },
-            ),
+                },
+              ),
             ),
           ],
         ),
+      );
+      },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
